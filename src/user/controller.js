@@ -2,21 +2,15 @@ const pool = require("../../db");
 const queries = require("../user/query");
 const jtw = require("jsonwebtoken");
 
-const obtenerUsuarios = (req,res) => {
-    const token = req.headers['x-access-token'];
-    if(!token) {
-        return res.status(401).json({
-            auth:false,
-            message: 'No token provide'
-        });
-    }
-    const decoded = jtw.verify(token, process.env.SECRET);
-    console.log(decoded);
+
+const obtenerUsuarios =  (req, res, next) => {
     pool.query(queries.obtenerUsuarios, (error,result) => {
         if(error) throw error;
         res.status(200).json(result.rows);
     });
+
 };
+
 
 const crearUsuario = (req, res) => {
     const {name, password, email, id} = req.body;
@@ -30,24 +24,24 @@ const crearUsuario = (req, res) => {
                });
         }
 
-        const token = jtw.sign({id: req.body.id},process.env.SECRET, {
+        const token = jtw.sign({id: email},process.env.SECRET, {
             expiresIn: 60*5
         })
-        console.log(token)
+        console.log(token.id)
 
         res.json({auth: true, token});
 
     });
 };
 
-const login = (req, res) => {
+const login = (req, res, next) => {
     const {email, password} = req.body;
     pool.query(queries.obtenerPorEmail, [email, password], (error, results) => {
         if(results.rows.length){
-            const token = jtw.sign({id: req.body.id},process.env.SECRET, {
-                expiresIn: 60*5
+            
+            const token = jtw.sign({id: email},process.env.SECRET, {
+                expiresIn: 60*60
             })
-            console.log(token)
     
             res.json({auth: true, token});
         }else{
